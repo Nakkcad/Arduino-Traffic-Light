@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pentagon Traffic Lights</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f0f0f0;
+        }
+        .pentagon-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin-top: 50px;
+        }
+        .traffic-light {
+            position: absolute;
+            width: 80px;
+            text-align: center;
+        }
+        .light {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 5px auto;
+            opacity: 0.3;
+        }
+        .red { background-color: red; }
+        .yellow { background-color: yellow; }
+        .green { background-color: rgb(63, 235, 63); }
+        .active { opacity: 1; box-shadow: 0 0 10px white; }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pentagon Traffic Light Controller</h1>
+    <div class="pentagon-container">
+        <!-- Positions calculated for pentagon shape -->
+        <div class="traffic-light" id="north" style="top: 0; left: 50%; transform: translateX(-50%);">
+            <div style="text-align:center;">NORTH</div>
+            <div class="light red"></div>
+            <div class="light yellow"></div>
+            <div class="light green"></div>
+        </div>
+        <div class="traffic-light" id="northeast" style="top: 30%; left: 85%; transform: translateX(-50%);">
+            <div style="text-align:center;">NORTHEAST</div>
+            <div class="light red"></div>
+            <div class="light yellow"></div>
+            <div class="light green"></div>
+        </div>
+        <div class="traffic-light" id="southeast" style="top: 70%; left: 70%; transform: translateX(-50%);">
+            <div style="text-align:center;">SOUTHEAST</div>
+            <div class="light red"></div>
+            <div class="light yellow"></div>
+            <div class="light green"></div>
+        </div>
+        <div class="traffic-light" id="northwest" style="top: 30%; left: 15%; transform: translateX(-50%);">
+            <div style="text-align:center;">NORTHWEST</div>
+            <div class="light red"></div>
+            <div class="light yellow"></div>
+            <div class="light green"></div>
+        </div>
+        <div class="traffic-light" id="southwest" style="top: 70%; left: 30%; transform: translateX(-50%);">
+            <div style="text-align:center;">SOUTHWEST</div>
+            <div class="light red"></div>
+            <div class="light yellow"></div>
+            <div class="light green"></div>
+        </div>
+    </div>
+
+    <script>
+        // Map direction IDs to their DOM elements
+        const directionElements = {
+            'NORTH': document.getElementById('north'),
+            'NORTHEAST': document.getElementById('northeast'),
+            'SOUTHEAST': document.getElementById('southeast'),
+            'SOUTHWEST': document.getElementById('southwest'),
+            'NORTHWEST': document.getElementById('northwest')
+        };
+
+        function updateLights() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    // Reset all lights first
+                    document.querySelectorAll('.light').forEach(light => {
+                        light.classList.remove('active');
+                    });
+
+                    // Update each direction's lights
+                    for (const [direction, states] of Object.entries(data)) {
+                        const element = directionElements[direction];
+                        if (element) {
+                            if (states.RED) element.querySelector('.red').classList.add('active');
+                            if (states.YELLOW) element.querySelector('.yellow').classList.add('active');
+                            if (states.GREEN) element.querySelector('.green').classList.add('active');
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching light status:', error));
+        }
+
+        // Update every 500ms and immediately on load
+        setInterval(updateLights, 500);
+        updateLights();
+    </script>
+</body>
+</html>
