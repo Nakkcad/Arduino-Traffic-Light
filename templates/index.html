@@ -1,93 +1,473 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pentagon Traffic Lights</title>
+    <title>Traffic Light Controller</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: flex-start;
             height: 100vh;
             margin: 0;
             background: #f0f0f0;
+            transition: background 0.3s;
         }
-        .pentagon-container {
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            min-width: 220px;
+            background: #fff;
+            box-shadow: 2px 0 12px #ccc;
+            padding: 24px 16px 24px 16px;
+            border-radius: 0 16px 16px 0;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+        .container {
             position: relative;
-            width: 400px;
-            height: 400px;
-            margin-top: 50px;
+            width: 700px;
+            height: 700px;
+            margin: 50px auto 0 auto; /* Move container down by 40px */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            max-width: 900px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 16px #ddd;
         }
         .traffic-light {
             position: absolute;
-            width: 80px;
+            width: 100px;
             text-align: center;
+            margin: 10px;
         }
         .light {
-            width: 30px;
-            height: 30px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             margin: 5px auto;
             opacity: 0.3;
+            border: 2px solid #333;
         }
         .red { background-color: red; }
         .yellow { background-color: yellow; }
         .green { background-color: rgb(63, 235, 63); }
-        .active { opacity: 1; box-shadow: 0 0 10px white; }
+        .active { opacity: 1; box-shadow: 0 0 15px white; }
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            width: 100%;
+        }
+        .controls {
+            margin-bottom: 24px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            background: #1976d2;
+            color: #fff;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .delay-inputs, .order-inputs {
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #ccc;
+            width: 100%;
+            min-width: 180px;
+        }
+        .delay-inputs h3, .order-inputs h3 {
+            margin-top: 0;
+        }
+        .delay-inputs div {
+            margin-bottom: 10px;
+        }
+        .order-block {
+            background: #e0e0e0;
+            border-radius: 4px;
+            padding: 8px;
+            text-align: center;
+            cursor: grab;
+            font-weight: bold;
+            border: 1px solid #bbb;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .order-block.dragging {
+            opacity: 0.5;
+            background: #bdbdbd;
+        }
+        .serial-view {
+            min-width: 260px;
+            max-width: 320px;
+            background: #fff;
+            box-shadow: -2px 0 12px #ccc;
+            padding: 24px 16px 24px 16px;
+            border-radius: 16px 0 0 16px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .serial-view h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .state-log {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 320px;
+            max-height: 180px;
+            background: #fff;
+            box-shadow: 0 2px 12px #ccc;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        .state-log h4 {
+            margin: 0 0 8px 0;
+            font-size: 15px;
+            color: #1976d2;
+        }
+        .state-log-entry {
+            margin-bottom: 4px;
+            color: #333;
+        }
+        .dark-toggle {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            z-index: 101;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .dark-toggle button {
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: none;
+            background: #333;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 12px #222;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .dark-toggle button:hover {
+            background: #222;
+        }
+        body.dark-mode {
+            background: #181818;
+        }
+        body.dark-mode,
+        body.dark-mode h1,
+        body.dark-mode .controls,
+        body.dark-mode .delay-inputs,
+        body.dark-mode .order-inputs,
+        body.dark-mode .order-block,
+        body.dark-mode .serial-view,
+        body.dark-mode .serial-view h3,
+        body.dark-mode .state-log,
+        body.dark-mode .state-log h4,
+        body.dark-mode .state-log-entry,
+        body.dark-mode label,
+        body.dark-mode input,
+        body.dark-mode strong,
+        body.dark-mode .traffic-light {
+            color: #eee !important;
+        }
+        body.dark-mode .order-block {
+            background: #2c2f36;
+            border-color: #444;
+        }
+        body.dark-mode .order-block.dragging {
+            background: #444;
+        }
+        body.dark-mode .delay-inputs,
+        body.dark-mode .order-inputs {
+            background: #23272f !important;
+            color: #eee !important;
+            box-shadow: 0 2px 8px #111 !important;
+        }
+        body.dark-mode .sidebar {
+            background: #23272f !important;
+            color: #eee !important;
+            box-shadow: 0 2px 16px #111 !important;
+        }
+        body.dark-mode .container {
+            background: #23272f !important;
+            color: #eee !important;
+            box-shadow: 0 2px 16px #111 !important;
+        }
+        body.dark-mode .serial-view {
+            background: #23272f !important;
+            color: #eee !important;
+            box-shadow: -2px 0 12px #111 !important;
+        }
+        body.dark-mode .state-log {
+            background: #23272f !important;
+            color: #eee !important;
+            box-shadow: 0 2px 12px #111 !important;
+        }
+        body.dark-mode .state-log h4 {
+            color: #90caf9 !important;
+        }
+        body.dark-mode .state-log-entry {
+            color: #eee !important;
+        }
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #181818;
+            color: #eee;
+            border: 1px solid #444;
+        }
+        body.dark-mode input::placeholder {
+            color: #aaa;
+        }
+        body.dark-mode strong {
+            color: #ffd700;
+        }
+        body.dark-mode .serial-view h3,
+        body.dark-mode .state-log h4 {
+            color: #90caf9;
+        }
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .sidebar {
+                flex-direction: row;
+                gap: 16px;
+                min-width: unset;
+                width: 100%;
+                border-radius: 0 0 16px 16px;
+                height: auto;
+                box-shadow: 0 2px 12px #ccc;
+                padding: 16px 8px;
+            }
+            .container {
+                margin: 24px auto 0 auto;
+            }
+            .serial-view {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Pentagon Traffic Light Controller</h1>
-    <div class="pentagon-container">
-        <!-- Positions calculated for pentagon shape -->
-        <div class="traffic-light" id="north" style="top: 0; left: 50%; transform: translateX(-50%);">
-            <div style="text-align:center;">NORTH</div>
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
+    <div class="sidebar">
+        <div class="controls">
+            <button id="pauseBtn">Pause</button>
+            <button id="resumeBtn">Resume</button>
+            <button id="statusBtn">Status</button>
         </div>
-        <div class="traffic-light" id="northeast" style="top: 30%; left: 85%; transform: translateX(-50%);">
-            <div style="text-align:center;">NORTHEAST</div>
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
+        <div class="delay-inputs">
+            <h3>Light Delays (ms)</h3>
+            <form id="delayForm">
+                <div>
+                    <strong>NORTH:</strong><br>
+                    <input type="number" name="NORTH_R" placeholder="Red" min="100" style="width:45px;" value="5000">
+                    <input type="number" name="NORTH_Y" placeholder="Yellow" min="100" style="width:45px;" value="2000">
+                    <input type="number" name="NORTH_G" placeholder="Green" min="100" style="width:45px;" value="5000">
+                </div>
+                <div>
+                    <strong>NE:</strong><br>
+                    <input type="number" name="NE_R" placeholder="Red" min="100" style="width:45px;" value="5000">
+                    <input type="number" name="NE_Y" placeholder="Yellow" min="100" style="width:45px;" value="2000">
+                    <input type="number" name="NE_G" placeholder="Green" min="100" style="width:45px;" value="5000">
+                </div>
+                <div>
+                    <strong>SE:</strong><br>
+                    <input type="number" name="SE_R" placeholder="Red" min="100" style="width:45px;" value="5000">
+                    <input type="number" name="SE_Y" placeholder="Yellow" min="100" style="width:45px;" value="2000">
+                    <input type="number" name="SE_G" placeholder="Green" min="100" style="width:45px;" value="5000">
+                </div>
+                <div>
+                    <strong>SW:</strong><br>
+                    <input type="number" name="SW_R" placeholder="Red" min="100" style="width:45px;" value="5000">
+                    <input type="number" name="SW_Y" placeholder="Yellow" min="100" style="width:45px;" value="2000">
+                    <input type="number" name="SW_G" placeholder="Green" min="100" style="width:45px;" value="5000">
+                </div>
+                <div>
+                    <strong>NW:</strong><br>
+                    <input type="number" name="NW_R" placeholder="Red" min="100" style="width:45px;" value="5000">
+                    <input type="number" name="NW_Y" placeholder="Yellow" min="100" style="width:45px;" value="2000">
+                    <input type="number" name="NW_G" placeholder="Green" min="100" style="width:45px;" value="5000">
+                </div>
+                <button type="submit" style="margin-top:8px;">Set Delays</button>
+            </form>
         </div>
-        <div class="traffic-light" id="southeast" style="top: 70%; left: 70%; transform: translateX(-50%);">
-            <div style="text-align:center;">SOUTHEAST</div>
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
+        <div class="order-inputs">
+            <h3 style="margin-top:0;">Light Order</h3>
+            <div id="orderBlocks" style="display:flex; flex-direction:column; gap:8px;">
+                <div class="order-block" draggable="true" data-dir="NORTH">NORTH</div>
+                <div class="order-block" draggable="true" data-dir="NE">NE</div>
+                <div class="order-block" draggable="true" data-dir="SE">SE</div>
+                <div class="order-block" draggable="true" data-dir="SW">SW</div>
+                <div class="order-block" draggable="true" data-dir="NW">NW</div>
+            </div>
+            <button id="setOrderBtn" style="margin-top:12px;">Set Order</button>
         </div>
-        <div class="traffic-light" id="northwest" style="top: 30%; left: 15%; transform: translateX(-50%);">
-            <div style="text-align:center;">NORTHWEST</div>
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <h1>Traffic Light Controller</h1>
+        <div class="container">
+            <!-- Traffic lights will be generated here -->
         </div>
-        <div class="traffic-light" id="southwest" style="top: 70%; left: 30%; transform: translateX(-50%);">
-            <div style="text-align:center;">SOUTHWEST</div>
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
-        </div>
+    </div>
+    <div class="serial-view">
+        <h3>Serial Output</h3>
+        <button id="serialRefreshBtn" style="margin-bottom:8px;">Refresh</button>
+        <div id="serialOutput" style="height:320px;overflow:auto;background:#222;color:#eee;padding:12px;border-radius:8px;font-family:monospace;font-size:14px;box-shadow:0 2px 8px #ccc;"></div>
+    </div>
+    <div class="state-log" id="stateLog">
+        <h4>State Log</h4>
+        <div id="stateLogEntries"></div>
+    </div>
+    <div class="dark-toggle">
+        <button id="darkModeBtn" title="Toggle dark mode">🌙 Dark Mode</button>
     </div>
 
     <script>
-        // Map direction IDs to their DOM elements
-        const directionElements = {
-            'NORTH': document.getElementById('north'),
-            'NORTHEAST': document.getElementById('northeast'),
-            'SOUTHEAST': document.getElementById('southeast'),
-            'SOUTHWEST': document.getElementById('southwest'),
-            'NORTHWEST': document.getElementById('northwest')
-        };
+        // Light configuration matching Arduino code
+        // Center at (300, 300), radius 220 for more spacing
+        const directions = [
+            { name: 'NORTH', x: 300, y: 80 },
+            { name: 'NE',   x: 480, y: 230 },
+            { name: 'SE',   x: 420, y: 480 },
+            { name: 'SW',   x: 180, y: 480 },
+            { name: 'NW',   x: 120, y: 230 }
+        ];
+        const container = document.querySelector('.container');
+
+        // Create traffic light elements at pentagon vertices
+        directions.forEach(dir => {
+            const lightDiv = document.createElement('div');
+            lightDiv.className = 'traffic-light';
+            lightDiv.id = dir.name.toLowerCase();
+            lightDiv.style.left = `${dir.x - 10}px`; // Center the light
+            lightDiv.style.top = `${dir.y - 50}px`;
+            lightDiv.innerHTML = `
+                <div style="text-align:center;font-weight:bold;">${dir.name}</div>
+                <div class="light red"></div>
+                <div class="light yellow"></div>
+                <div class="light green"></div>
+            `;
+            container.appendChild(lightDiv);
+        });
+
+        // Control buttons
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            sendCommand('!pause');
+        });
+        
+        document.getElementById('resumeBtn').addEventListener('click', () => {
+            sendCommand('!resume');
+        });
+        
+        document.getElementById('statusBtn').addEventListener('click', () => {
+            sendCommand('!status');
+        });
+
+        document.getElementById('delayForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Gather delay values in order: NORTH, NE, SE, SW, NW (Red, Yellow, Green for each)
+            const order = ['NORTH', 'NE', 'SE', 'SW', 'NW'];
+            let delays = [];
+            order.forEach(dir => {
+                delays.push(document.querySelector(`[name="${dir}_R"]`).value || 5000);
+                delays.push(document.querySelector(`[name="${dir}_Y"]`).value || 2000);
+                delays.push(document.querySelector(`[name="${dir}_G"]`).value || 5000);
+            });
+            // Send to backend
+            sendCommand('!delay ' + delays.join(','));
+        });
+
+        // Drag & drop logic for order blocks
+        const orderBlocks = document.getElementById('orderBlocks');
+        let draggedBlock = null;
+
+        orderBlocks.addEventListener('dragstart', function(e) {
+            if (e.target.classList.contains('order-block')) {
+                draggedBlock = e.target;
+                e.target.classList.add('dragging');
+            }
+        });
+        orderBlocks.addEventListener('dragend', function(e) {
+            if (draggedBlock) {
+                draggedBlock.classList.remove('dragging');
+                draggedBlock = null;
+            }
+        });
+        orderBlocks.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(orderBlocks, e.clientY);
+            if (draggedBlock && afterElement) {
+                orderBlocks.insertBefore(draggedBlock, afterElement);
+            } else if (draggedBlock) {
+                orderBlocks.appendChild(draggedBlock);
+            }
+        });
+        function getDragAfterElement(container, y) {
+            const blocks = [...container.querySelectorAll('.order-block:not(.dragging)')];
+            return blocks.find(block => {
+                const rect = block.getBoundingClientRect();
+                return y < rect.top + rect.height / 2;
+            });
+        }
+
+        // Set order button
+        document.getElementById('setOrderBtn').addEventListener('click', function() {
+            // Get current order as indices for Arduino
+            const dirToIndex = { 'NORTH': 0, 'NE': 1, 'SE': 2, 'SW': 3, 'NW': 4 };
+            const order = Array.from(orderBlocks.children).map(block => dirToIndex[block.dataset.dir]);
+            if (order.length === 5) {
+                sendCommand('!order ' + order.join(','));
+            }
+        });
+
+        function sendCommand(cmd) {
+            fetch('/command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({command: cmd})
+            })
+            .then(response => response.json())
+            .then(data => console.log('Command response:', data))
+            .catch(error => console.error('Error sending command:', error));
+        }
 
         function updateLights() {
             fetch('/status')
@@ -98,9 +478,13 @@
                         light.classList.remove('active');
                     });
 
-                    // Update each direction's lights
+                    // Update each direction's lights, ignore STATE
                     for (const [direction, states] of Object.entries(data)) {
-                        const element = directionElements[direction];
+                        if (direction === 'STATE') {
+                            logState(states);
+                            continue;
+                        }
+                        const element = document.getElementById(direction.toLowerCase());
                         if (element) {
                             if (states.RED) element.querySelector('.red').classList.add('active');
                             if (states.YELLOW) element.querySelector('.yellow').classList.add('active');
@@ -111,9 +495,52 @@
                 .catch(error => console.error('Error fetching light status:', error));
         }
 
+        // Log STATE messages to the bottom right panel
+        function logState(stateValue) {
+            const logEntries = document.getElementById('stateLogEntries');
+            const entry = document.createElement('div');
+            entry.className = 'state-log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] STATE: ${stateValue}`;
+            logEntries.appendChild(entry);
+            // Keep only last 20 entries
+            while (logEntries.children.length > 20) {
+                logEntries.removeChild(logEntries.firstChild);
+            }
+            // Scroll to bottom
+            logEntries.scrollTop = logEntries.scrollHeight;
+        }
+
+        // Serial view logic
+        function updateSerialView() {
+            fetch('/serial')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('serialOutput').textContent = data;
+                })
+                .catch(error => {
+                    document.getElementById('serialOutput').textContent = 'Error loading serial data';
+                });
+        }
+        document.getElementById('serialRefreshBtn').addEventListener('click', updateSerialView);
+        setInterval(updateSerialView, 1000);
+        updateSerialView();
+
         // Update every 500ms and immediately on load
         setInterval(updateLights, 500);
         updateLights();
+
+        // Dark mode toggle logic
+        const darkModeBtn = document.getElementById('darkModeBtn');
+        function setDarkMode(enabled) {
+            document.body.classList.toggle('dark-mode', enabled);
+            localStorage.setItem('darkMode', enabled ? '1' : '0');
+            darkModeBtn.textContent = enabled ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+        darkModeBtn.addEventListener('click', () => {
+            setDarkMode(!document.body.classList.contains('dark-mode'));
+        });
+        // On load, restore dark mode from localStorage
+        setDarkMode(localStorage.getItem('darkMode') === '1');
     </script>
 </body>
 </html>
