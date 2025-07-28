@@ -1,10 +1,10 @@
 // Pin definitions
 const int lights[5][3] = {
-  {A0, A1, A2},    // 0: Center
-  {4, 3, 2},       // 1: North
-  {7, 6, 5},       // 2: East
-  {10, 9, 8},      // 3: South
-  {13, 12, 11}     // 4: West
+  {A2, A1, A0},    // 0: Center green yellow red
+  {2, 3, 4},       // 1: North
+  {5, 6, 7},       // 2: East
+  {8, 9, 10},      // 3: South
+  {11, 12, 13}     // 4: West
 };
 
 // System state
