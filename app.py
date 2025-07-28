@@ -15,7 +15,7 @@ lights = {dir: {"RED": True, "YELLOW": False, "GREEN": False} for dir in directi
 # Serial communication setup
 ser = None
 try:
-    ser = serial.Serial('COM3', 115200, timeout=1)  # Update COM port as needed
+    ser = serial.Serial('COM4', 115200, timeout=1)  # Update COM port as needed
     time.sleep(2)  # Wait for Arduino to initialize
 except Exception as e:
     print(f"Error opening serial port: {e}")
