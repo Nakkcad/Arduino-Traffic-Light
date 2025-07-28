@@ -1,6 +1,6 @@
 // Pin definitions
 const int lights[5][3] = {
-  {A2, A1, A0},    // 0: Center green yellow red
+  {A2, A1, A0},    // 0: Center
   {2, 3, 4},       // 1: North
   {5, 6, 7},       // 2: East
   {8, 9, 10},      // 3: South
@@ -10,12 +10,13 @@ const int lights[5][3] = {
 // System state
 int lightOrder[5] = {0, 1, 2, 3, 4};
 unsigned long lightDelays[5][3] = {
-  {5000, 2000, 5000},  // Center
-  {5000, 2000, 5000},  // North
-  {5000, 2000, 5000},  // East
-  {5000, 2000, 5000},  // South
-  {5000, 2000, 5000}   // West
+  {1000, 1000, 1000},  // Center
+  {1000, 1000, 1000},  // North
+  {1000, 1000, 1000},  // East
+  {1000, 1000, 1000},  // South
+  {1000, 1000, 1000}   // West
 };
+
 
 // Pause/resume state
 struct PauseState {
@@ -61,41 +62,69 @@ void runTrafficCycle() {
     int next = lightOrder[(i + 1) % 5];
     pauseState.nextLight = next;
 
-    // Phase 1: All RED
-    if (pauseState.currentPhase <= 0) {
-      turnAllRed();
-      sendLightStates();
-      if (!smartDelay(10)) return;
-      pauseState.currentPhase = 1;
-    }
-
-    // Phase 2: Current GREEN
+    // Phase 1: Current GREEN
     if (pauseState.currentPhase <= 1) {
-      digitalWrite(lights[current][0], LOW);
-      digitalWrite(lights[current][2], HIGH);
+      // State update before transition
       sendLightStates();
-      if (!smartDelay(lightDelays[current][2])) return;
+      
+      // Transition from RED to GREEN
+      digitalWrite(lights[current][0], LOW);   // Turn off current RED
+      sendLightStates();  // State update after RED off
+      digitalWrite(lights[current][2], HIGH); // Turn on current GREEN
+      sendLightStates();  // State update after GREEN on
+      
+      if (!smartDelay(lightDelays[current][2])) {
+        sendLightStates();  // Final state update if paused
+        return;
+      }
       pauseState.currentPhase = 2;
+      sendLightStates();  // State update after phase completion
     }
     
-    // Phase 3: Current YELLOW + Next YELLOW
+    // Phase 2: Current YELLOW + Next YELLOW
     if (pauseState.currentPhase <= 2) {
-      digitalWrite(lights[current][2], LOW);
-      digitalWrite(lights[current][1], HIGH);
-      digitalWrite(lights[next][0], LOW);
-      digitalWrite(lights[next][1], HIGH);
+      // State update before transition
       sendLightStates();
-      if (!smartDelay(lightDelays[current][1])) return;
+      
+      // Transition from GREEN to YELLOW
+      digitalWrite(lights[current][2], LOW);  // Turn off current GREEN
+      sendLightStates();  // State update after GREEN off
+      digitalWrite(lights[current][1], HIGH); // Turn on current YELLOW
+      sendLightStates();  // State update after YELLOW on
+      
+      // Prepare next light
+      digitalWrite(lights[next][0], LOW);     // Turn off next RED
+      sendLightStates();  // State update after next RED off
+      digitalWrite(lights[next][1], HIGH);    // Turn on next YELLOW
+      sendLightStates();  // State update after next YELLOW on
+      
+      if (!smartDelay(lightDelays[current][1])) {
+        sendLightStates();  // Final state update if paused
+        return;
+      }
       pauseState.currentPhase = 3;
+      sendLightStates();  // State update after phase completion
     }
 
-    // Cleanup
-    digitalWrite(lights[current][1], LOW);
-    digitalWrite(lights[next][1], LOW);
-    sendLightStates();
-    pauseState.currentPhase = 0; // Reset for next light
+    // Phase 3: Cleanup and transition to next light
+    sendLightStates();  // State update before cleanup
+    
+    // Turn off both YELLOWs
+    digitalWrite(lights[current][1], LOW);    // Turn off current YELLOW
+    sendLightStates();  // State update after current YELLOW off
+    digitalWrite(lights[next][1], LOW);       // Turn off next YELLOW
+    sendLightStates();  // State update after next YELLOW off
+    
+    // Turn on both REDs
+    digitalWrite(lights[next][0], HIGH);      // Turn on next RED
+    sendLightStates();  // State update after next RED on
+    digitalWrite(lights[current][0], HIGH);   // Turn on current RED
+    sendLightStates();  // Final state update after current RED on
+    
+    pauseState.currentPhase = 1; // Reset for next light
   }
   pauseState.currentLight = 0; // Reset cycle
+  sendLightStates();  // Final state update after cycle complete
 }
 
 bool smartDelay(unsigned long duration) {
@@ -289,10 +318,16 @@ void sendLightStates() {
 }
 
 void turnAllRed() {
+  // First turn on all red lights
   for (int i = 0; i < 5; i++) {
-    digitalWrite(lights[i][0], HIGH);
-    digitalWrite(lights[i][1], LOW);
-    digitalWrite(lights[i][2], LOW);
+    digitalWrite(lights[i][0], HIGH);  // Turn on RED
   }
+  
+  // Then turn off all other lights (YELLOW and GREEN)
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(lights[i][1], LOW);   // Turn off YELLOW
+    digitalWrite(lights[i][2], LOW);   // Turn off GREEN
+  }
+  
   sendLightStates();
 }
