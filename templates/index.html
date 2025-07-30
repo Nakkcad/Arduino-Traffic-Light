@@ -166,9 +166,6 @@
             background: #222;
             border-radius: 8px;
         }
-        .state-log-entries {
-            /* Remove pointer-events: auto; (not needed) */
-        }
         .state-log h4 {
             margin: 0 0 8px 0;
             font-size: 15px;
@@ -380,9 +377,13 @@
         </div>
     </div>
     <div class="serial-view">
-        <h3>Serial Output</h3>
+        <h3>Serial Monitor</h3>
         <button id="serialRefreshBtn" style="margin-bottom:8px;">Refresh</button>
-        <div id="serialOutput" style="height:320px;overflow:auto;background:#222;color:#eee;padding:12px;border-radius:8px;font-family:monospace;font-size:14px;box-shadow:0 2px 8px #ccc; white-space: pre-wrap;"></div>
+        <div id="serialMonitor" style="height:320px;overflow:auto;background:#222;color:#eee;padding:12px;border-radius:8px;font-family:monospace;font-size:14px;box-shadow:0 2px 8px #ccc; white-space: pre-wrap;"></div>
+        <div style="margin-top:12px;">
+            <textarea id="serialCommandInput" rows="2" style="width:100%;resize:vertical;font-family:monospace;font-size:14px;padding:6px;border-radius:6px;border:1px solid #bbb;" placeholder="Type command here..."></textarea>
+            <button id="serialSendBtn" style="margin-top:6px;width:100%;">Send Command</button>
+        </div>
     </div>
     <div class="state-log" id="stateLog">
         <h4>State Log</h4>
@@ -558,10 +559,10 @@ sendCommand(delayCommand);
             fetch('/serial')
                 .then(response => response.text())
                 .then(data => {
-                    document.getElementById('serialOutput').textContent = data;
+                    document.getElementById('serialMonitor').textContent = data;
                 })
                 .catch(error => {
-                    document.getElementById('serialOutput').textContent = 'Error loading serial data';
+                    document.getElementById('serialMonitor').textContent = 'Error loading serial data';
                 });
         }
         document.getElementById('serialRefreshBtn').addEventListener('click', updateSerialView);
@@ -584,6 +585,21 @@ sendCommand(delayCommand);
         });
         // On load, restore dark mode from localStorage
         setDarkMode(localStorage.getItem('darkMode') === '1');
+
+        // Serial command send logic
+    document.getElementById('serialSendBtn').addEventListener('click', function() {
+        const cmd = document.getElementById('serialCommandInput').value.trim();
+        if (cmd) {
+            sendCommand(cmd);
+            document.getElementById('serialCommandInput').value = '';
+        }
+    });
+    document.getElementById('serialCommandInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('serialSendBtn').click();
+        }
+    });
     </script>
 </body>
 </html>
