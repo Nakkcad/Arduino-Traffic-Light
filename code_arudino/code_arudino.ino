@@ -10,11 +10,11 @@ const int lights[5][3] = {
 // System state
 int lightOrder[5] = {0, 1, 2, 3, 4};
 unsigned long lightDelays[5][3] = {
-  {1000, 1000, 1000},  // Center
-  {1000, 1000, 1000},  // North
-  {1000, 1000, 1000},  // East
-  {1000, 1000, 1000},  // South
-  {1000, 1000, 1000}   // West
+  {5000, 1000, 5000},  // Center
+  {5000, 1000, 5000},  // North
+  {5000, 1000, 5000},  // East
+  {5000, 1000, 5000},  // South
+  {5000, 1000, 5000}   // West
 };
 
 
