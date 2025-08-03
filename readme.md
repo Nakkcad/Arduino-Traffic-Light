@@ -79,4 +79,4 @@ Send via serial monitor or API:
 
 - **Directions**: The order and naming must match between Arduino and Python code.
 - **Serial Port**: Update `COM4` to match your Arduino's port.
-- **Simulator**: Use `test.py` for
+- **Simulator**: Use `test.py` for testing without hardware.
