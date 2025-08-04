@@ -8,7 +8,7 @@ from collections import deque
 app = Flask(__name__)
 
 # Light names matching the Arduino code
-directions = ["NORTH", "SW", "SE", "NW", "NE"]
+directions = ["NORTH", "NE", "SE", "SW", "NW"]
 
 # Initialize all lights to RED (matches Arduino initial state)
 lights = {dir: {"RED": True, "YELLOW": False, "GREEN": False} for dir in directions}
