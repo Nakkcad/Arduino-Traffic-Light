@@ -15,11 +15,12 @@ const struct {
   uint8_t yellow;
   uint8_t green;
 } LIGHT_PINS[5] = {
-  {2, 3, 4},       // 0: NORTH
-  {5, 6, 7},       // 1: NE
-  {8, 9, 10},      // 2: SE
-  {11, 12, 13},    // 3: SW
-  {A2, A1, A0}     // 4: NW
+  {A2, A1, A0},		// 0: NORTH
+  {2, 3, 4},		// 1: NE
+  {5, 6, 7},		// 2: SE
+  {8, 9, 10},		// 3: SW
+  {11, 12, 13}		// 4: NW  
+       
 };
 
 const char* LIGHT_NAMES[5] = {"NORTH", "NE", "SE", "SW", "NW"};
@@ -366,7 +367,6 @@ void handleManualControl() {
         }
       }
     }
-    sendLightStates();
   }
 }
 
