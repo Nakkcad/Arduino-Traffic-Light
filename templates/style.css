@@ -230,6 +230,11 @@ body.dark-mode .sidebar {
     color: #eee !important;
     box-shadow: 0 2px 16px #111 !important;
 }
+body.dark-mode .manual-toggle {
+    background: #23272f !important;
+    color: #eee !important;
+    box-shadow: 0 2px 16px #111 !important;
+}
 body.dark-mode .container {
     background: #23272f !important;
     color: #eee !important;
