@@ -367,6 +367,7 @@ void handleManualControl() {
         }
       }
     }
+    sendLightStates();
   }
 }
 
