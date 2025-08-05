@@ -129,9 +129,11 @@ void runTrafficCycle() {
     // Phase 1: Current GREEN
     if (systemState.currentPhase <= GREEN_ACTIVE) {
       sendLightStates();
-      safeLightTransition(current, 0, 2); // RED to GREEN
+      // Turn on current green (others should be red)
+      digitalWrite(LIGHT_PINS[current].red, LOW);
+      digitalWrite(LIGHT_PINS[current].green, HIGH);
       
-      if (!processDelay(config.delays[current][2])) {
+      if (!processDelay(config.delays[current][2])) {  // Green duration
         sendLightStates();
         return;
       }
@@ -139,18 +141,17 @@ void runTrafficCycle() {
       sendLightStates();
     }
     
-    // Phase 2: Current YELLOW + Next YELLOW (both with RED)
+    // Phase 2: Current GREEN + YELLOW (prepare to transition to red)
     if (systemState.currentPhase <= YELLOW_TRANSITION) {
       sendLightStates();
-      safeLightTransition(current, 2, 1); // GREEN to YELLOW
-      digitalWrite(LIGHT_PINS[current].red, HIGH);
+      digitalWrite(LIGHT_PINS[current].yellow, HIGH);  // Add yellow to green
       
-      // Prepare next light
+      // Also prepare next light: red + yellow
       digitalWrite(LIGHT_PINS[next].red, HIGH);
       digitalWrite(LIGHT_PINS[next].yellow, HIGH);
       sendLightStates();
       
-      if (!processDelay(config.delays[current][1])) {
+      if (!processDelay(config.delays[current][1])) {  // Yellow duration
         sendLightStates();
         return;
       }
@@ -158,12 +159,16 @@ void runTrafficCycle() {
       sendLightStates();
     }
 
-    // Phase 3: Cleanup
+    // Phase 3: Transition both lights
     sendLightStates();
+    // Turn off current light (green + yellow) and turn on red
+    digitalWrite(LIGHT_PINS[current].green, LOW);
     digitalWrite(LIGHT_PINS[current].yellow, LOW);
-    digitalWrite(LIGHT_PINS[next].yellow, LOW);
-    digitalWrite(LIGHT_PINS[next].red, HIGH);
     digitalWrite(LIGHT_PINS[current].red, HIGH);
+    
+    // Turn off next light's yellow and turn on green
+    digitalWrite(LIGHT_PINS[next].yellow, LOW);
+    digitalWrite(LIGHT_PINS[next].green, HIGH);
     sendLightStates();
     
     systemState.currentPhase = GREEN_ACTIVE; // Reset for next light
@@ -367,7 +372,6 @@ void handleManualControl() {
         }
       }
     }
-    sendLightStates();
   }
 }
 
