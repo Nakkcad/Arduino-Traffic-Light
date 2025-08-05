@@ -81,7 +81,7 @@ def update_lights_from_arduino():
                                     green = state_bits[base + 2] == '1'
                                     lights[direction]["RED"] = red
                                     lights[direction]["YELLOW"] = yellow
-                                    lights[direction]["GREEN"] = green
+                                    lights[direction]["GREEN"] = green  
                                     current_state[direction] = {
                                         "RED": red,
                                         "YELLOW": yellow,
