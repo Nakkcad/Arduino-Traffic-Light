@@ -51,7 +51,11 @@ serial_log = deque(maxlen=100)  # Changed to deque for better performance
 
 def get_serial_log():
     """Return serial log entries excluding STATE messages, similar to test.py"""
-    return [log for log in serial_log if not log.startswith("STATE:")]
+    return [log for log in serial_log if not log.startswith("STATE ")]
+
+def get_state_log():
+    return [log for log in serial_log if log.startswith("STATE ")]
+    
 
 def update_lights_from_arduino():
     global lights, serial_log, state_history
@@ -62,16 +66,19 @@ def update_lights_from_arduino():
                 if line:
                     print(line)  # Print serial output to terminal
                     serial_log.append(line)
-                    if line.startswith("STATE:"):
+                    if line.startswith("STATE "):
                         try:
-                            state_data = line.split(':')[1].split(',')
-                            current_state = {}
-                            for i in range(0, len(state_data), 4):
-                                direction = state_data[i]
-                                red = state_data[i+1] == '1'
-                                yellow = state_data[i+2] == '1'
-                                green = state_data[i+3] == '1'
-                                if direction in lights:
+                            # Example: STATE 100100100100100
+                            state_bits = line.split("STATE ")[1].strip()
+                            # Each direction has 3 bits: RED, YELLOW, GREEN
+                            # directions = ["NORTH", "NE", "SE", "SW", "NW"]
+                            if len(state_bits) == len(directions) * 3:
+                                current_state = {}
+                                for idx, direction in enumerate(directions):
+                                    base = idx * 3
+                                    red = state_bits[base] == '1'
+                                    yellow = state_bits[base + 1] == '1'
+                                    green = state_bits[base + 2] == '1'
                                     lights[direction]["RED"] = red
                                     lights[direction]["YELLOW"] = yellow
                                     lights[direction]["GREEN"] = green
@@ -80,16 +87,17 @@ def update_lights_from_arduino():
                                         "YELLOW": yellow,
                                         "GREEN": green
                                     }
-                            state_history.append({
-                                "timestamp": time.time(),
-                                "state": current_state,
-                                "raw": line
-                            })
+                                state_history.append({
+                                    "state": current_state,
+                                    "raw": line
+                                })
+                            else:
+                                print(f"Unexpected state length: {state_bits}")
                         except Exception as e:
                             print(f"Error parsing state line: {e}")
                     else:
                         serial_log.append(line)
-        time.sleep(0.1)
+        time.sleep(0.05)
 
 def send_command(cmd):
     with serial_lock:
