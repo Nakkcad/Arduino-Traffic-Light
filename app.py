@@ -4,6 +4,7 @@ import serial
 import time
 from threading import Thread, Lock
 from collections import deque
+import serial.tools.list_ports
 
 app = Flask(__name__)
 
@@ -18,14 +19,32 @@ state_history = deque(maxlen=100)
 
 # Serial communication setup
 ser = None
-try:
-    ser = serial.Serial('COM4', 115200, timeout=1)  # Update COM port as needed
-    time.sleep(2)  # Wait for Arduino to initialize
-except Exception as e:
-    print(f"Error opening serial port: {e}")
-
-# Lock for thread-safe serial communication
 serial_lock = Lock()
+
+def find_serial_port():
+    ports = list(serial.tools.list_ports.comports())
+    for port in ports:
+        return port.device
+    return None
+
+BAUDRATE = 115200
+
+def connect_serial():
+    global ser
+    while True:
+        with serial_lock:
+            if ser is None:
+                port = find_serial_port()
+                if port:
+                    try:
+                        ser = serial.Serial(port, BAUDRATE, timeout=1)
+                        print(f"Connected to {port}")
+                        time.sleep(2)  # Wait for Arduino to initialize
+                    except Exception as e:
+                        print(f"Failed to connect: {e}")
+                else:
+                    print("No serial port found. Retrying in 2s...")
+        time.sleep(2)
 
 # Buffer for serial log
 serial_log = deque(maxlen=100)  # Changed to deque for better performance
@@ -37,16 +56,15 @@ def get_serial_log():
 def update_lights_from_arduino():
     global lights, serial_log, state_history
     while True:
-        if ser and ser.in_waiting:
-            with serial_lock:
-                line = ser.readline().decode('utf-8').strip()
+        with serial_lock:
+            if ser and ser.in_waiting:
+                line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
+                    print(line)  # Print serial output to terminal
                     serial_log.append(line)
-                    # Expect format: STATE:NORTH,1,0,0,SW,1,0,0,SE,1,0,0,NW,1,0,0,NE,1,0,0
                     if line.startswith("STATE:"):
                         try:
                             state_data = line.split(':')[1].split(',')
-                            # state_data: [dir1,red1,yellow1,green1,dir2,red2,...]
                             current_state = {}
                             for i in range(0, len(state_data), 4):
                                 direction = state_data[i]
@@ -62,7 +80,6 @@ def update_lights_from_arduino():
                                         "YELLOW": yellow,
                                         "GREEN": green
                                     }
-                            # Add to state history
                             state_history.append({
                                 "timestamp": time.time(),
                                 "state": current_state,
@@ -71,14 +88,12 @@ def update_lights_from_arduino():
                         except Exception as e:
                             print(f"Error parsing state line: {e}")
                     else:
-                        # Non-STATE messages (commands, errors, etc.)
                         serial_log.append(line)
-
         time.sleep(0.1)
 
 def send_command(cmd):
-    if ser:
-        with serial_lock:
+    with serial_lock:
+        if ser:
             ser.write((cmd + '\n').encode('utf-8'))
             serial_log.append(f"CMD: {cmd}")
 
@@ -107,9 +122,6 @@ def serial_view():
     return '\n'.join(get_serial_log()), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 if __name__ == '__main__':
-    if ser:
-        update_thread = Thread(target=update_lights_from_arduino)
-        update_thread.daemon = True
-        update_thread.start()
-    
+    Thread(target=connect_serial, daemon=True).start()
+    Thread(target=update_lights_from_arduino, daemon=True).start()
     app.run(debug=True, threaded=True)
