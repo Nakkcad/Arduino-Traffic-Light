@@ -432,16 +432,11 @@ void printLightDelays() {
 }
 
 void sendLightStates() {
-  Serial.print("STATE:");
+  Serial.print("STATE ");
   for (int i = 0; i < 5; i++) {
-    Serial.print(LIGHT_NAMES[i]);
-    Serial.print(",");
     Serial.print(digitalRead(LIGHT_PINS[i].red) ? "1" : "0");
-    Serial.print(",");
     Serial.print(digitalRead(LIGHT_PINS[i].yellow) ? "1" : "0");
-    Serial.print(",");
     Serial.print(digitalRead(LIGHT_PINS[i].green) ? "1" : "0");
-    if (i < 4) Serial.print(",");
   }
   Serial.println();
 }
